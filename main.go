@@ -9,7 +9,7 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/axcom/tdsbridge/pkg"
+	"github.com/axcom/tdsbridge-go/pkg"
 )
 
 func main() {

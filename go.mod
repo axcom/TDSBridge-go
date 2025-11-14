@@ -1,3 +1,3 @@
-module github.com/axcom/tdsbridge
+module github.com/axcom/tdsbridge-go
 
 go 1.20
