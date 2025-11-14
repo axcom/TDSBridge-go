@@ -84,48 +84,41 @@ func handleTDSMessageReceived(bc *pkg.BridgedConnection, msg pkg.TDSMessage) {
 		// 处理RPCRequestMessage
 		// 这里可以添加额外的RPC消息处理逻辑
 
-		//#if DEBUG
-		//using (System.IO.FileStream fs = new System.IO.FileStream(
-		//    "C:\\temp\\dev\\" + (iRPC++) + ".raw",
-		//    System.IO.FileMode.Create,
-		//    System.IO.FileAccess.Write,
-		//    System.IO.FileShare.Read))
-		//{
-		//    fs.Write(bPayload, 0, bPayload.Length);
-		//}
-		//#endif
+		// +build debug
+		{
+			// 使用匿名函数和 defer/recover 来模拟 try-catch 块
+			func() {
+				defer func() {
+					if r := recover(); r != nil {
+						// 捕获到恐慌（Panic），对应 C# 的 catch (Exception)
+						fmt.Printf("Exception: %v\n", r)
+					}
+				}()
+				bPayload := rpcMsg.AssemblePayload()
 
-		// 使用匿名函数和 defer/recover 来模拟 try-catch 块
-		func() {
-			defer func() {
-				if r := recover(); r != nil {
-					// 捕获到恐慌（Panic），对应 C# 的 catch (Exception)
-					fmt.Printf("Exception: %v\n", r)
+				// 使用原子操作递增计数器，确保文件名唯一
+				fileName := filepath.Join(".\\dev", strconv.FormatUint(atomic.AddUint64(&iRPC, 1), 10)+".raw")
+				// 打开文件，设置为创建、只写模式
+				fs, err := os.OpenFile(fileName, os.O_CREATE|os.O_WRONLY, 0644)
+				if err != nil {
+					// 错误处理
+					fmt.Printf("Failed to create file %s: %v", fileName, err)
+					return
 				}
-			}()
-			bPayload := rpcMsg.AssemblePayload()
+				// 使用 defer 确保文件在函数退出时被关闭
+				defer fs.Close()
+				// 将 payload 写入文件
+				_, err = fs.Write(bPayload)
+				if err != nil {
+					// 错误处理
+					fmt.Printf("Failed to write to file %s: %v", fileName, err)
+					return
+				}
+				fmt.Printf("Write to file %s: %v", fileName, err)
 
-			// 使用原子操作递增计数器，确保文件名唯一
-			fileName := filepath.Join(".\\dev", strconv.FormatUint(atomic.AddUint64(&iRPC, 1), 10)+".raw")
-			// 打开文件，设置为创建、只写模式
-			fs, err := os.OpenFile(fileName, os.O_CREATE|os.O_WRONLY, 0644)
-			if err != nil {
-				// 错误处理
-				fmt.Printf("Failed to create file %s: %v", fileName, err)
-				return
-			}
-			// 使用 defer 确保文件在函数退出时被关闭
-			defer fs.Close()
-			// 将 payload 写入文件
-			_, err = fs.Write(bPayload)
-			if err != nil {
-				// 错误处理
-				fmt.Printf("Failed to write to file %s: %v", fileName, err)
-				return
-			}
-			fmt.Printf("Write to file %s: %v", fileName, err)
-
-		}() // 使用匿名函数和 defer/recover 来模拟 try-catch 块
+			}() // 使用匿名函数和 defer/recover 来模拟 try-catch 块
+		}
+		// -build debug
 	}
 	// 可以添加更多 else if 分支来处理其他消息类型
 }
